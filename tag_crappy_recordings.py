@@ -79,8 +79,11 @@ def process_data(filename):
         words = line.split(',')
         QID = words[0].strip()
         type_of_issue_qid = words[1].strip()
-        correct_language_qid = words[2].strip()
-        wrong_language_qid = words[3].strip()
+        correct_language_qid = ""
+        wrong_language_qid = ""
+        if len(words) > 2:
+            correct_language_qid = words[2].strip()
+            wrong_language_qid = words[3].strip()
 
         # check for missing argument
         if not QID or not type_of_issue_qid:
@@ -113,11 +116,12 @@ def process_data(filename):
             claim.setTarget(target)
             item.addClaim(claim, bot=True, summary=f'Adding "type of issue" -> {type_of_issue_qid}')
 
-            correct_language = get_item(correct_language_qid)
-            add_qualifier(claim, p_correct_language, correct_language)
-            
-            wrong_language = get_item(wrong_language_qid)
-            add_qualifier(claim, p_wrong_language, wrong_language)
+            if type_of_issue_qid == "Q593546": #wrong language code
+                correct_language = get_item(correct_language_qid)
+                add_qualifier(claim, p_correct_language, correct_language)
+                
+                wrong_language = get_item(wrong_language_qid)
+                add_qualifier(claim, p_wrong_language, wrong_language)
         else:
             for claim in item.claims[p_type_of_issue]:
                 # add qualifiers for wrong language code
