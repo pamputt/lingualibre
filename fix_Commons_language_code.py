@@ -90,10 +90,6 @@ def modify_Commons(record):
         pageCommons = pywikibot.Page(siteLL, 'User:Pamputt/bot_test')
     else:
         pageCommons = pywikibot.Page(siteCommons, record["file"])
-
-    if DEBUG:
-        print("COMMONS")
-        print(pageCommons.get()) #print the wikicode
     
     oldtext = pageCommons.get()
     newtext = text_replace(oldtext, record["usedLangWD"], record["targetLangWD"])
@@ -101,6 +97,8 @@ def modify_Commons(record):
         return
 
     if DEBUG:
+        print("COMMONS")
+        print(pageCommons.get()) #print the wikicode
         print(f"\n{newtext}\n")
 
     pageCommons.text=newtext
@@ -216,7 +214,7 @@ def delete_on_LinguaLibre(record_to_delete, correct_record):
     if DEBUG:
         print(f"\n{new_text}\n")
     
-    pageLL.text=new_text
+    pageLL.text = new_text
     pageLL.save(f"{id_to_delete} to delete")
 
     
