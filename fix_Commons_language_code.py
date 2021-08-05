@@ -12,25 +12,29 @@ DEBUG = True
 ENDPOINT = "https://lingualibre.org/bigdata/namespace/wdq/sparql"
 BASEQUERY = """
 SELECT DISTINCT
-    ?record ?file ?language ?typeIssue
-	?targetLanguage ?usedLanguage
-	?targetLanguageWikidataID ?usedLanguageWikidataID
+    ?record ?file ?language 
+    ?speaker ?transcription ?typeIssue
+    ?targetLanguage ?usedLanguage
+    ?targetLanguageWikidataID ?usedLanguageWikidataID
 WHERE {
   ?record prop:P2  entity:Q2 .
   ?record prop:P3  ?file .
   ?record prop:P4  ?language .
-  ?record prop:P33 entity:Q593546 .
+  ?record prop:P5  ?speaker .
+  ?record prop:P7  ?transcription .
+  OPTIONAL {?record prop:P33 entity:Q593546 .}
 
-  ?record llp:P33 ?issueStatement .
-  ?issueStatement llq:P34 ?targetLanguage .
-  ?issueStatement llq:P35 ?usedLanguage .
+  OPTIONAL {?record llp:P33 ?issueStatement .}
+  OPTIONAL {?issueStatement llq:P34 ?targetLanguage .}
+  OPTIONAL {?issueStatement llq:P35 ?usedLanguage .}
 
-  ?targetLanguage prop:P12 ?targetLanguageWikidataID .
-  ?usedLanguage prop:P12 ?usedLanguageWikidataID .
+  OPTIONAL {?targetLanguage prop:P12 ?targetLanguageWikidataID .}
+  OPTIONAL {?usedLanguage prop:P12 ?usedLanguageWikidataID .}
 
   SERVICE wikibase:label {
     bd:serviceParam wikibase:language "en" .
   }
+
 #filters
 }"""
 
@@ -40,6 +44,7 @@ repoLL = siteLL.data_repository()
 
 siteCommons = pywikibot.Site('commons','commons')
 repoCommons = siteCommons.data_repository()
+
 
 def text_replace(text, toreplace, replacedby):
     newtext=""
@@ -67,6 +72,8 @@ def get_records(query):
                 "id": sparql.format_value(record, "record"),
                 "file": "File:"+sparql.format_value(record, "file"),
                 "language": sparql.format_value(record, "language"),
+                "speaker": sparql.format_value(record, "speaker"),
+                "transcription": sparql.format_value(record, "transcription"),
                 "targetLang": sparql.format_value(record, "targetLanguage"),
                 "usedLang": sparql.format_value(record, "usedLanguage"),
                 "targetLangWD": sparql.format_value(record, "targetLanguageWikidataID"),
@@ -129,17 +136,108 @@ def modify_LinguaLibre(record):
         else:
             print(f"The current language ({claim.getTarget().title()}) is different than the used language ({record['usedLang']})")
 
+            
+def get_correct_recording(record):
+
+    transcription = record["transcription"]
+    speaker = record["speaker"]
+
+    # Look for recordings that have:
+    #* the same speaker
+    #* the same transcription
+    #* the language that is equal to the target language of the erroneous recording
+    sparql = Sparql(ENDPOINT)
+    filters = ""
+    filters+= "FILTER( ?speaker = entity:" + speaker + ") ."
+    filters+= "FILTER( ?transcription = '" + transcription + "' ) ."
+    filters+= "FILTER( ?targetLanguage = ?language ) ."
+    query = BASEQUERY.replace("#filters", filters)
+    
+    raw_records = sparql.request(query)
+    if len(raw_records) == 1:
+        return raw_records[0]
+
+    return None
+
+
+def delete_on_Commons(record_to_delete, correct_record):
+    print(f"Ask for {record_to_delete['file']} to be deleted on Wikimedia Commons!")
+
+    pageCommons = None
+    if DEBUG:
+        pageCommons = pywikibot.Page(siteLL, 'User:Pamputt/bot_test')
+    else:
+        pageCommons = pywikibot.Page(siteCommons, record["file"])
+
+    old_text = pageCommons.get()
+    if old_text.find("{{Speedydelete") != -1:
+        print("Deletion already taken into account")
+        return
+        
+    targetLangWD = record_to_delete["targetLangWD"]
+    usedLangWD = record_to_delete["usedLangWD"]
+    
+    sparql = Sparql(ENDPOINT)
+    correct_file = sparql.format_value(correct_record, "file")
+
+    delete_text = '{{Speedydelete |1=Erroneous language ("' + usedLangWD + '" instead of "' + targetLangWD + '").'
+    delete_text += 'A file with the correct language (and correct name) is available [[:File:' + correct_file + '|here]] (same speaker, same word).}}\n'
+
+    new_text = delete_text + old_text
+
+    if DEBUG:
+        print(f"\n{new_text}\n")
+
+    pageCommons.text=new_text
+    pageCommons.save("speedy deletion")
+    
+
+def delete_on_LinguaLibre(record_to_delete, correct_record):
+    print(f"Delete {record_to_delete['id']} on Lingua Libre")
+    
+    pageLL = None
+    if DEBUG:
+        pageLL = pywikibot.Page(siteLL, "User:Pamputt/bot_test")
+    else:
+        pageLL = pywikibot.Page(siteLL, "LinguaLibre:Misleading items/Items to delete")
+        
+    old_text = pageLL.get()
+
+    sparql = Sparql(ENDPOINT)
+    id_to_delete = record_to_delete["id"]
+    if old_text.find(id_to_delete) != -1:
+        print(f"{id_to_delete} already listed for deletion")
+        return
+    
+    correct_id = sparql.format_value(correct_record, "record")
+    add_text = "\n# {{rec|" + id_to_delete + "}} (correct file: {{Q|" + correct_id + "}})\n"
+
+    new_text = old_text + add_text
+    if DEBUG:
+        print(f"\n{new_text}\n")
+    
+    pageLL.text=new_text
+    pageLL.save(f"{id_to_delete} to delete")
 
     
 def process_data():
 
     # Get the informations of all the records
     filters = ""
-    records = get_records(BASEQUERY.replace("#filters", filters))
+    records = get_records(BASEQUERY.replace("#filters", filters).replace("OPTIONAL {","").replace(".}","."))
     counter = 0
     for record in records:
         if DEBUG:
             print(record)
+
+        # Check if a recording by the same speaker and with the same name
+        # but with a correct language already exists
+        # Get None if not
+        correct_record = get_correct_recording(record)
+        if correct_record:
+            delete_on_Commons(record, correct_record)
+            delete_on_LinguaLibre(record, correct_record)
+            continue
 
         modify_Commons(record)
        
