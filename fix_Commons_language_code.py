@@ -121,9 +121,11 @@ def modify_LinguaLibre(record):
 
     if not item.claims: # no statements found in this item
         return
+    
     if 'P4' not in item.claims: # property P4 not found in this item
         return
-    for claim in item.claims['P4']: # mind that item.claims['P4'] is a list of all P599 claims over which you want to loop here
+    
+    for claim in item.claims['P4']: # mind that item.claims['P4'] is a list of all P4 claims over which you want to loop here
         targetItem = pywikibot.ItemPage(siteLL, record["targetLang"])
         if claim.getTarget() == targetItem: # claim is target language, skip
             print(f"The current language ({claim.getTarget().title()}) is already the target language ({record['targetLang']})")
@@ -134,6 +136,9 @@ def modify_LinguaLibre(record):
         else:
             print(f"The current language ({claim.getTarget().title()}) is different than the used language ({record['usedLang']})")
 
+
+    #TODO: delete P33 statement after changeTarget
+            
             
 def get_correct_recording(record):
 
@@ -178,7 +183,7 @@ def delete_on_Commons(record_to_delete, correct_record):
     sparql = Sparql(ENDPOINT)
     correct_file = sparql.format_value(correct_record, "file")
 
-    delete_text = '{{Speedydelete |1=Erroneous language ("' + usedLangWD + '" instead of "' + targetLangWD + '").'
+    delete_text = '{{Speedydelete |1=Erroneous language ("' + usedLangWD + '" instead of "' + targetLangWD + '"). '
     delete_text += 'A file with the correct language (and correct name) is available [[:File:' + correct_file + '|here]] (same speaker, same word).}}\n'
 
     new_text = delete_text + old_text
