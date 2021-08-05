@@ -197,7 +197,9 @@ def delete_on_Commons(record_to_delete, correct_record):
 
 def delete_on_LinguaLibre(record_to_delete, correct_record):
     print(f"Delete {record_to_delete['id']} on Lingua Libre")
-    
+
+    #TODO: better to add a new property on the item to delete
+    #Example: is duplicate of the correct item: Q1234
     pageLL = None
     if DEBUG:
         pageLL = pywikibot.Page(siteLL, "User:Pamputt/bot_test")
