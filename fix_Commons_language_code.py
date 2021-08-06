@@ -106,6 +106,11 @@ def modify_Commons(record):
 
     
 def modify_LinguaLibre(record):
+    p_language = "P4"
+    p_type_of_issue = "P33"
+    p_target_language = "P34"
+    p_used_language = "P35"
+    
     item = None
     if DEBUG: 
         item = pywikibot.ItemPage(siteLL, "Q595275")
@@ -121,11 +126,12 @@ def modify_LinguaLibre(record):
 
     if not item.claims: # no statements found in this item
         return
-    
-    if 'P4' not in item.claims: # property P4 not found in this item
+
+    # Modifying the language
+    if p_language not in item.claims: # property P4 (language) not found in this item
         return
     
-    for claim in item.claims['P4']: # mind that item.claims['P4'] is a list of all P4 claims over which you want to loop here
+    for claim in item.claims[p_language]: # item.claims['P4'] is a list of all P4 claims over which one wants to loop here
         targetItem = pywikibot.ItemPage(siteLL, record["targetLang"])
         if claim.getTarget() == targetItem: # claim is target language, skip
             print(f"The current language ({claim.getTarget().title()}) is already the target language ({record['targetLang']})")
@@ -137,7 +143,17 @@ def modify_LinguaLibre(record):
             print(f"The current language ({claim.getTarget().title()}) is different than the used language ({record['usedLang']})")
 
 
-    #TODO: delete P33 statement after changeTarget
+    # Removing P33
+    if p_type_of_issue not in item.claims: # property P33 (type of issue) not found in this item
+        return
+    
+    for claim in item.claims[p_type_of_issue]: # item.claims['P33'] is a list of all P33 claims over which one wants to loop here
+        # Check whether qualifiers are the good ones
+        if not claim.has_qualifier(p_used_language, record["usedLang"]):
+            return 
+        if not claim.has_qualifier(p_target_language, record["targetLang"]):
+            return
+        item.removeClaims(claim) #Removing claim
             
             
 def get_correct_recording(record):
