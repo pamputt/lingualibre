@@ -113,7 +113,7 @@ def modify_LinguaLibre(record):
     
     item = None
     if DEBUG: 
-        item = pywikibot.ItemPage(siteLL, "Q595275")
+        item = pywikibot.ItemPage(siteLL, "Q595275") # sandbox item
     else:
         item = pywikibot.ItemPage(siteLL, record["id"])  # a repository item
         
@@ -214,31 +214,19 @@ def delete_on_Commons(record_to_delete, correct_record):
 def delete_on_LinguaLibre(record_to_delete, correct_record):
     print(f"Delete {record_to_delete['id']} on Lingua Libre")
 
-    #TODO: better to add a new property on the item to delete
-    #Example: is duplicate of the correct item: Q1234
-    pageLL = None
-    if DEBUG:
-        pageLL = pywikibot.Page(siteLL, "User:Pamputt/bot_test")
+    item = None
+    if DEBUG: 
+        item = pywikibot.ItemPage(siteLL, "Q595275") # sandbox item
     else:
-        pageLL = pywikibot.Page(siteLL, "LinguaLibre:Misleading items/Items to delete")
-        
-    old_text = pageLL.get()
+        item = pywikibot.ItemPage(siteLL, record["id"])  # a repository item
 
-    sparql = Sparql(ENDPOINT)
-    id_to_delete = record_to_delete["id"]
-    if old_text.find(id_to_delete) != -1:
-        print(f"{id_to_delete} already listed for deletion")
-        return
-    
+    p_duplicate_item = "P37"
     correct_id = sparql.format_value(correct_record, "record")
-    add_text = "\n# {{rec|" + id_to_delete + "}} (correct file: {{Q|" + correct_id + "}})\n"
-
-    new_text = old_text + add_text
-    if DEBUG:
-        print(f"\n{new_text}\n")
     
-    pageLL.text = new_text
-    pageLL.save(f"{id_to_delete} to delete")
+    claim = pywikibot.Claim(siteLL, p_duplicate_item)
+    target = pywikibot.ItemPage(siteLL, correct_id)
+    claim.setTarget(target)
+    item.addClaim(claim)
 
     
 def process_data():
