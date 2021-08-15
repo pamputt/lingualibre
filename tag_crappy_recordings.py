@@ -140,7 +140,7 @@ def main():
     args = sys.argv
     if len(args) < 2:
         print("Please provide a filename that contains the list of QID to process")
-        print("python3 ../core/pwb.py tag_crappy_recordings.py file.txt")
+        print("python3 pwb.py tag_crappy_recordings.py file.txt")
         return
     
     process_data(args[1])

@@ -255,12 +255,11 @@ def process_data():
         counter = counter+1
         if DEBUG and counter > 0:
             break
-    
 
-   
+
 def main():
     process_data()
-    
-              
+
+
 if __name__ == "__main__":
     main()
