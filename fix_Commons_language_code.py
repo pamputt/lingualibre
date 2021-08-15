@@ -154,7 +154,11 @@ def modify_LinguaLibre(record):
         if not claim.has_qualifier(p_target_language, record["targetLang"]):
             return
         item.removeClaims(claim) #Removing claim
-            
+
+    # Modifying the label
+    # TODO: modify label to take into account language code modification
+    # Example: "audio record - fra - Darmo117 (Darmo117)"
+    # -> "audio record - eng - Darmo117 (Darmo117)"
             
 def get_correct_recording(record):
 
