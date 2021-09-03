@@ -72,8 +72,50 @@ def manual_definition(pron, nature):
     if pron == "aʁ.ʃe.ɛn" and nature == "adjectif":
         return "(relatif à la commune française Arches)"
 
+    #ay
+    if pron == "a.i" and nature == "nom":
+        return "(vin rouge)"
+    if pron == "aj" and nature == "interjection":
+        return "(variante de « aïe »)"
+    if pron == "ɛ" and nature == "verbe":
+        return "(forme ancienne de « (j')ai »)"
+    
+    #bolos
+    if pron == "bɔ.lɔs" and nature == "nom":
+        return "(injure)"
+    
+    #bot
+    if pron == "bo" and nature == "adjectif":
+        return "(comme dans « pied bot »)"
+    if pron == "bɔt" and nature == "nom":
+        return "(programme informatique)"
+    
+    #Bourg
+    if pron == "buʁ" and nature == "nom propre":
+        return "(commune de Gironde en France)"
+    if pron == "buʁk" and nature == "nom propre":
+        return "(comme dans « Bourg-en-Bresse »)"
+    
+    #Broglie
+    if pron == "bʁo.ɡli" and nature == "nom propre":
+        return "(commune de l'Eure en France)"
+    
+    #Callot
+    if pron == "ka.lɔt" and nature == "nom propre":
+        return "(île française située au large Carantec)"
+    
+    #Cassis
+    if pron == "ka.si" and nature == "nom propre":
+        return "(commune des Bouches-du-Rhône en France)"
+    if pron == "ka.si" and nature == "nom":
+        return "(vin de la région de Cassis)"
+    
+    #Charon
+    if pron == "ka.ʁɔ̃" and nature == "nom propre":
+        return "(satellite de la planète naine Pluton)"
+    
     #cimer
-    if pron == "si.mɛʁ" and nature == "interfjection":
+    if pron == "si.mɛʁ" and nature == "interjection":
         return "(verlan de merci)"
     
     return None
@@ -138,7 +180,7 @@ def get_pronunciation_and_definition(wikicode):
         if ("=={{S|" in line.replace(" ","") and
             "}}==" in line.replace(" ","")):
             pos1 = line.find("{{S|")
-            pos2 = line.find("|fr", pos1)
+            pos2 = line.find("|", pos1+4)
             nature = line[pos1+4:pos2]
 
         # Get the pronunciation(s)
@@ -151,10 +193,10 @@ def get_pronunciation_and_definition(wikicode):
                 pos1 = pos2
 
         # Get the definition
-        if ("#" in line
-            and not "#fr" in line
-            and not "#*" in line
-            and len(prons)>0):
+        pos = line.find("#")
+        if (pos == 0
+            and "#*" not in line
+            and len(prons) > 0):
             definition = line[line.find("#")+1:]
 
         if definition:
@@ -197,7 +239,10 @@ def update_list():
                 new_def = manual_definition(p1,n)
             print(f"{p1}/{p2} -> {n} ... {d} -> «{new_def}»")
         
-        
+        #TODO: vérifier que les deux définitions simplifiées
+        #      sont différentes pour chacune des prononciations
+        #      d'une entrée
+            
 def main():
     update_list()
     
